@@ -36,8 +36,9 @@ class NS_Single_ImgPose_Dataset(Dataset):
     """
 
     def __init__(self, data_root, trans, *, scene_name=None, scene_id=None):
+        meta_path = os.path.join(data_root, 'v1.0-trainval_meta', 'v1.0-trainval')
         if scene_name is None:
-            scenes_meta_path = os.path.join(data_root, 'v1.0-trainval_meta', 'v1.0-trainval', 'scene.json')
+            scenes_meta_path = os.path.join(meta_path, 'scene.json')
             with open(scenes_meta_path) as f:
                 scenes_meta = json.load(f)
                 scene_name = scenes_meta[scene_id]['name']
@@ -52,11 +53,19 @@ class NS_Single_ImgPose_Dataset(Dataset):
             with open(scenes_meta_path) as f:
                 scenes_meta = json.load(f)
                 self.data_list += [[meta['filename'], meta['ego_pose_token']] for meta in scenes_meta]
+                del scenes_meta
 
-        ego_pose_path = os.path.join(data_root, 'v1.0-trainval_meta', 'v1.0-trainval', 'ego_pose.json')
+        calibrated_sensor_path = os.path.join(meta_path, 'calibrated_sensor.json')
+        with open(calibrated_sensor_path) as f:
+            calibrated_sensor = json.load(f)
+            calibrated_sensor = {cs['token']: [cs['rotation'], cs['translation']] for cs in calibrated_sensor}
+
+        ego_pose_path = os.path.join(meta_path, 'ego_pose.json')
         with open(ego_pose_path) as f:
             ego_poses = json.load(f)
+            # rot = GeometricUtils.quaternion_2_rotation(ego_pose_dir[0])
             self.ego_pose_dir = {pose['token']: [pose['rotation'], pose['translation']] for pose in ego_poses}
+            del ego_poses
 
         self.trans = trans
 
